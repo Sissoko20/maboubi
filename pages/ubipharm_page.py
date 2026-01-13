@@ -25,6 +25,16 @@ if uploaded_file:
         st.subheader("🌍 Vue globale : tous les produits")
         st.dataframe(df, use_container_width=True)
 
+        # Colonnes dynamiques (toutes les colonnes de ventes)
+        sales_cols = [c for c in df.columns if c not in ["Région", "Code Produit", "Nom Produit", "Stock", "CR"]]
+
+        # Sélecteur Streamlit pour choisir la colonne de ventes
+        selected_sales_col = st.selectbox(
+            "📊 Choisissez la colonne de ventes à utiliser pour la répartition",
+            options=sales_cols,
+            index=0  # par défaut la première (ex: 11/25 ou 12/26)
+        )
+
         # Choix du mode de répartition
         repartition_mode = st.radio(
             "Choisissez le mode de répartition par communes",
@@ -43,9 +53,9 @@ if uploaded_file:
                 communes = region_to_communes[region]
 
                 if repartition_mode == "Verticale (lignes)":
-                    df_communes = repartir_par_communes(region_df, communes, col="11/25")
+                    df_communes = repartir_par_communes(region_df, communes, col=selected_sales_col)
                 else:
-                    df_communes = repartir_par_communes_horizontal(region_df, communes, col="11/25")
+                    df_communes = repartir_par_communes_horizontal(region_df, communes, col=selected_sales_col)
 
                 # ➕ Sélecteur de colonnes appliqué à la répartition
                 st.subheader(f"🧩 Filtrage des colonnes pour {region}")
