@@ -42,13 +42,6 @@ def extract_headers(txt_content):
 
 
 def parse_ubipharm_txt(txt_content):
-    """
-    Parser robuste:
-    - Récupère dynamiquement les en-têtes de ventes (mois courant + M-1..M-6).
-    - Capture Stock (optionnel) et CR.
-    - Associe strictement 7 valeurs de ventes aux 7 en-têtes.
-    - Évite toute colonne '/' et garantit une seule colonne de mois courant.
-    """
     lines = txt_content.splitlines()
     region = None
     data = []
@@ -60,7 +53,7 @@ def parse_ubipharm_txt(txt_content):
         region_match = re.search(r'Pays.*R.gion\s+\d+/\w+\s+(.*)', line)
         if region_match:
             region = region_match.group(1).strip()
-            continue  # passer à la ligne suivante
+            continue
 
         # Détecter les lignes produit
         product_match = re.match(
@@ -75,10 +68,14 @@ def parse_ubipharm_txt(txt_content):
             cr = int(product_match.group(4))
             sales = [int(product_match.group(i)) for i in range(5, 12)]
 
-            # Validation stricte: 7 en-têtes et 7 valeurs
+            # --- Correction : réalignement ---
+            if len(sales) == 7:
+                # Si la première n’est pas un mois, mais la dernière oui → on décale
+                if not MONTH_RE.match(str(sales[0])) and MONTH_RE.match(str(sales[-1])):
+                    sales = [sales[-1]] + sales[:-1]
+
+            # Validation stricte
             if len(headers) != 7 or len(sales) != 7:
-                # Si mismatch, on skip ou on log selon besoin
-                # Ici on skip pour éviter des colonnes fausses
                 continue
 
             row = {
