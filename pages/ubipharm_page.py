@@ -9,17 +9,38 @@ from components.repartition import (
     region_to_communes
 )
 
+
 st.header("⚙️ Refactoring des données - Ubipharm")
+
 uploaded_file = st.file_uploader("Upload fichier TXT brut (Ubipharm)", type="txt")
 
 if uploaded_file:
-    txt_content = uploaded_file.read().decode("utf-8", errors="ignore")
-    df = parse_ubipharm_txt(txt_content)
+    # Lecture brute en bytes
+    raw_bytes = uploaded_file.read()
 
-    if df.empty:
-        st.warning("Le parsing n’a retourné aucune ligne. Vérifiez le format du fichier TXT.")
+    # Essai multi-encodages pour éviter blocages liés au nom ou BOM
+    for enc in ["utf-8-sig", "latin-1", "utf-8"]:
+        try:
+            txt_content = raw_bytes.decode(enc)
+            break
+        except UnicodeDecodeError:
+            txt_content = None
+
+    if txt_content is None:
+        st.error("❌ Impossible de décoder le fichier. Vérifiez l'encodage.")
     else:
-        st.success("✅ Fichier parsé avec succès")
+        # Nettoyage BOM éventuel
+        txt_content = txt_content.replace("\ufeff", "")
+
+        # Parsing basé uniquement sur le contenu
+        df = parse_ubipharm_txt(txt_content)
+
+        if df.empty:
+            st.warning("⚠️ Le parsing n’a retourné aucune ligne. Vérifiez le format du fichier TXT.")
+        else:
+            st.success("✅ Fichier parsé avec succès")
+            st.dataframe(df.head())  # aperçu des données
+
 
         # Vue globale
         st.subheader("🌍 Vue globale : tous les produits")
