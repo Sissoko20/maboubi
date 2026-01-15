@@ -41,34 +41,51 @@ if uploaded_file:
             st.success("✅ Fichier parsé avec succès")
             st.dataframe(df.head())  # aperçu des données
 
-
         # Vue globale
         st.subheader("🌍 Vue globale : tous les produits")
         st.dataframe(df, use_container_width=True)
 
+        # Suppression des produits indésirables
+        st.subheader("🧹 Nettoyage : supprimer les produits non désirables")
+
+        product_col = "Produit" if "Produit" in df.columns else "Nom Produit"
+        undesirable_products = st.multiselect(
+            "Sélectionnez les produits à supprimer :",
+            options=df[product_col].unique()
+        )
+
+        # Filtrage
+        if undesirable_products:
+            df_filtered = df[~df[product_col].isin(undesirable_products)]
+            st.success(f"✅ {len(undesirable_products)} produit(s) supprimé(s)")
+            st.dataframe(df_filtered, use_container_width=True)
+        else:
+            df_filtered = df.copy()
+            st.info("ℹ️ Aucun produit supprimé")
+
         # Colonnes dynamiques (toutes les colonnes de ventes)
-        sales_cols = [c for c in df.columns if c not in ["Région", "Code Produit", "Nom Produit", "Stock", "CR"]]
+        sales_cols = [c for c in df_filtered.columns if c not in ["Région", "Code Produit", "Nom Produit", "Stock", "CR"]]
 
         # Sélecteur Streamlit pour choisir la colonne de ventes
         selected_sales_col = st.selectbox(
             "📊 Choisissez la colonne de ventes à utiliser pour la répartition",
             options=sales_cols,
-            index=0  # par défaut la première (ex: 11/25 ou 12/26)
+            index=0
         )
 
         # Choix du mode de répartition
         repartition_mode = st.radio(
             "Choisissez le mode de répartition par communes",
             options=["Verticale (lignes)", "Horizontale (colonnes)"],
-            index=1  # par défaut horizontale
+            index=1
         )
 
-        regions = df["Région"].dropna().unique()
+        regions = df_filtered["Région"].dropna().unique()
         repartition_results = {}
 
         for region in regions:
             st.markdown(f"### 📍 {region}")
-            region_df = df[df["Région"] == region]
+            region_df = df_filtered[df_filtered["Région"] == region]
 
             if region in region_to_communes:
                 communes = region_to_communes[region]
@@ -84,7 +101,7 @@ if uploaded_file:
                     f"Colonnes à garder ({region})",
                     options=df_communes.columns.tolist(),
                     default=df_communes.columns.tolist(),
-                    key=f"filter_{region}"  # clé unique par région
+                    key=f"filter_{region}"
                 )
 
                 filtered_communes = df_communes[selected_cols]
