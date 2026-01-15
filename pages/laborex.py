@@ -1,0 +1,98 @@
+import streamlit as st
+import pandas as pd
+from io import BytesIO
+
+st.set_page_config(page_title="Extraction ventes par zone", layout="wide")
+st.title("📊 Extraction & Analyse des ventes par zone")
+
+uploaded_file = st.file_uploader("📂 Charger le fichier Excel", type=["xlsx"])
+
+if uploaded_file:
+    # 1️⃣ Lecture Excel (suppression des 3 premières lignes)
+    df = pd.read_excel(uploaded_file, skiprows=3)
+
+    st.subheader("🔎 Aperçu des données après nettoyage")
+    st.dataframe(df.head())
+
+    # 2️⃣ Colonnes
+    label_col = df.columns[0]
+    vente_cols = df.columns[1::2]  # 1 colonne sur 2 = VENTE
+
+    ventes_df = df[[label_col] + list(vente_cols)]
+
+    # 3️⃣ Exclusion de produits
+    produits = ventes_df[label_col].dropna().unique().tolist()
+
+    produits_a_exclure = st.multiselect(
+        "🚫 Sélectionner les produits à exclure",
+        options=produits
+    )
+
+    if produits_a_exclure:
+        ventes_df = ventes_df[~ventes_df[label_col].isin(produits_a_exclure)]
+
+    st.subheader("📋 Ventes par zone (format large)")
+    st.dataframe(ventes_df)
+
+    # 4️⃣ Format analytique
+    ventes_long = ventes_df.melt(
+        id_vars=label_col,
+        var_name="Zone",
+        value_name="Vente"
+    )
+
+    # Nettoyage
+    ventes_long["Vente"] = pd.to_numeric(ventes_long["Vente"], errors="coerce").fillna(0)
+
+    # 5️⃣ AGRÉGATION PAR ZONE
+    ventes_zone = (
+        ventes_long
+        .groupby("Zone", as_index=False)["Vente"]
+        .sum()
+        .sort_values("Vente", ascending=False)
+    )
+
+    # =====================
+    # 📈 KPI
+    # =====================
+    total_ventes = ventes_zone["Vente"].sum()
+    top_zone = ventes_zone.iloc[0]["Zone"]
+    top_zone_valeur = ventes_zone.iloc[0]["Vente"]
+
+    col1, col2 = st.columns(2)
+
+    col1.metric(
+        "💰 Total des ventes",
+        f"{int(total_ventes):,}".replace(",", " ")
+    )
+
+    col2.metric(
+        "🏆 Top zone",
+        f"{top_zone}",
+        f"{int(top_zone_valeur):,}".replace(",", " ")
+    )
+
+    # =====================
+    # 📊 GRAPHIQUE BARRES
+    # =====================
+    st.subheader("📊 Ventes par zone")
+
+    st.bar_chart(
+        ventes_zone.set_index("Zone")["Vente"]
+    )
+
+    # =====================
+    # ⬇️ EXPORT EXCEL
+    # =====================
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        ventes_df.to_excel(writer, index=False, sheet_name="Ventes_par_zone")
+        ventes_long.to_excel(writer, index=False, sheet_name="Format_analytique")
+        ventes_zone.to_excel(writer, index=False, sheet_name="Synthese_par_zone")
+
+    st.download_button(
+        "⬇️ Télécharger le fichier Excel",
+        data=output.getvalue(),
+        file_name="ventes_par_zone.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
