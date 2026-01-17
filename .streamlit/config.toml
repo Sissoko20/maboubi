@@ -6,4 +6,4 @@ showSidebarNavigation = false
 
 [toolbar]
 # Cache les options avancées (menu hamburger)
-mode = "minimal"   
+mode = "developer"   
