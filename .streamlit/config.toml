@@ -1,0 +1,9 @@
+
+
+[client]
+# Désactive la navigation automatique du dossier pages
+showSidebarNavigation = false
+
+[toolbar]
+# Cache les options avancées (menu hamburger)
+mode = "minimal"   

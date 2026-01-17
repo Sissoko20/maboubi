@@ -6,3 +6,4 @@ toml==0.10.2
 plotly==5.18.0
 openpyxl
 # force rebuild v0.3
+streamlit_option_menu
