@@ -103,25 +103,6 @@ if uploaded_file:
         .sort_values("Vente", ascending=False)
     )
 
-    # =====================
-    # 📈 KPI
-    # =====================
-    total_ventes = ventes_zone["Vente"].sum()
-    top_zone = ventes_zone.iloc[0]["Zone"]
-    top_zone_valeur = ventes_zone.iloc[0]["Vente"]
-
-    col1, col2 = st.columns(2)
-
-    col1.metric(
-        "💰 Total des ventes",
-        f"{int(total_ventes):,}".replace(",", " ")
-    )
-
-    col2.metric(
-        "🏆 Top zone",
-        f"{top_zone}",
-        f"{int(top_zone_valeur):,}".replace(",", " ")
-    )
 
     # =====================
     # 📊 GRAPHIQUE BARRES
